@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyModbusLibrary;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,7 +23,7 @@ namespace ModbusLibrary
             // 一个异常的响应包含: 从站地址(1) + 异常功能码(1) + 异常码(1) + CRC(2) = 5字节
             if (responseFrame.Length < 5)
             {
-                throw new System.IO.InvalidDataException("响应帧长度不足5字节，无效。");
+                throw new ModbusFrameException("响应帧长度不足5字节，无效。");
             }
 
             // 2. 验证CRC
@@ -40,7 +41,7 @@ namespace ModbusLibrary
                 string errorMsg = $"CRC校验失败! " +
                                   $"收到: {receivedCrc[0]:X2}-{receivedCrc[1]:X2}, " +
                                   $"计算得: {calculatedCrc[0]:X2}-{calculatedCrc[1]:X2}";
-                throw new System.IO.InvalidDataException(errorMsg);
+                throw new ModbusFrameException(errorMsg);
             }
         }
 
@@ -76,13 +77,13 @@ namespace ModbusLibrary
             if (responseFrame[1] > 0x80)
             {
                 byte exceptionCode = responseFrame[2];
-                throw new System.IO.IOException($"从站返回异常码: {exceptionCode}");
+                throw new ModbusSlaveException(exceptionCode);
             }
 
             // 检查功能码是否是我们期望的 0x01 
             if (responseFrame[1] != 0x01)
             {
-                throw new System.IO.InvalidDataException($"功能码不匹配，期望 0x01，收到 {responseFrame[1]:X2}");
+                throw new ModbusFrameException($"功能码不匹配，期望 0x01，收到 {responseFrame[1]:X2}");
             }
 
             // 3. 解析数据区
@@ -127,13 +128,13 @@ namespace ModbusLibrary
             if (responseFrame[1] > 0x80)
             {
                 byte exceptionCode = responseFrame[2];
-                throw new System.IO.IOException($"从站返回异常码: {exceptionCode:X2}");
+                throw new ModbusSlaveException(exceptionCode);
             }
 
             // 检查功能码是否是我们期望的 0x02 (唯一的逻辑改动)
             if (responseFrame[1] != 0x02)
             {
-                throw new System.IO.InvalidDataException($"功能码不匹配，期望 0x02，收到 {responseFrame[1]:X2}");
+                throw new ModbusFrameException($"功能码不匹配，期望 0x02，收到 {responseFrame[1]:X2}");
             }
 
             // 3. 解析数据区 (这部分逻辑和 ParseReadCoilsResponse 完全一样)
@@ -170,13 +171,13 @@ namespace ModbusLibrary
             if (responseFrame[1] > 0x80)
             {
                 byte exceptionCode = responseFrame[2];
-                throw new System.IO.IOException($"从站返回异常码: {exceptionCode:X2}");
+                throw new ModbusSlaveException(exceptionCode);
             }
 
             // 检查功能码是否是我们期望的 0x03
             if (responseFrame[1] != 0x03)
             {
-                throw new System.IO.InvalidDataException($"功能码不匹配，期望 0x03，收到 {responseFrame[1]:X2}");
+                throw new ModbusFrameException($"功能码不匹配，期望 0x03，收到 {responseFrame[1]:X2}");
             }
 
             // 3. 解析数据区
@@ -185,13 +186,13 @@ namespace ModbusLibrary
             // 检查从站返回的字节数是否等于我们期望的数量 * 2
             if (byteCount != quantity * 2)
             {
-                throw new System.IO.InvalidDataException($"响应报文中的字节计数与请求的数量不符。期望 {quantity * 2} 字节，收到 {byteCount} 字节。");
+                throw new ModbusFrameException($"响应报文中的字节计数与请求的数量不符。期望 {quantity * 2} 字节，收到 {byteCount} 字节。");
             }
 
             // 检查字节计数是否是偶数 (因为一个寄存器是2字节)
             if (byteCount % 2 != 0)
             {
-                throw new System.IO.InvalidDataException("响应数据区的字节计数不是偶数。");
+                throw new ModbusFrameException("响应数据区的字节计数不是偶数。");
             }
 
             int numRegisters = byteCount / 2;
@@ -222,13 +223,13 @@ namespace ModbusLibrary
             if (responseFrame[1] > 0x80)
             {
                 byte exceptionCode = responseFrame[2];
-                throw new System.IO.IOException($"从站返回异常码: {exceptionCode:X2}");
+                throw new ModbusSlaveException(exceptionCode);
             }
 
             // 3. 检查功能码
             if (responseFrame[1] != 0x04)
             {
-                throw new System.IO.InvalidDataException($"功能码不匹配，期望 0x04，收到 {responseFrame[1]:X2}");
+                throw new ModbusFrameException($"功能码不匹配，期望 0x04，收到 {responseFrame[1]:X2}");
             }
 
             // 4. 解析数据区
@@ -237,7 +238,7 @@ namespace ModbusLibrary
             // 检查从站返回的字节数是否等于我们期望的数量 * 2
             if (byteCount != quantity * 2)
             {
-                throw new System.IO.InvalidDataException($"响应报文中的字节计数与请求的数量不符。期望 {quantity * 2} 字节，收到 {byteCount} 字节。");
+                throw new ModbusFrameException($"响应报文中的字节计数与请求的数量不符。期望 {quantity * 2} 字节，收到 {byteCount} 字节。");
             }
 
             int numRegisters = byteCount / 2;
@@ -268,19 +269,19 @@ namespace ModbusLibrary
             if (responseFrame[1] > 0x80)
             {
                 byte exceptionCode = responseFrame[2];
-                throw new System.IO.IOException($"从站返回异常码: {exceptionCode:X2}");
+                throw new ModbusSlaveException(exceptionCode);
             }
 
             // 3. 检查功能码是否正确
             if (responseFrame[1] != 0x05)
             {
-                throw new System.IO.InvalidDataException($"功能码不匹配，期望 0x05，收到 {responseFrame[1]:X2}");
+                throw new ModbusFrameException($"功能码不匹配，期望 0x05，收到 {responseFrame[1]:X2}");
             }
 
             // 4. 检查报文长度是否为固定的8字节
             if (responseFrame.Length != 8)
             {
-                throw new System.IO.InvalidDataException($"响应报文长度错误，期望 8 字节，收到 {responseFrame.Length} 字节");
+                throw new ModbusFrameException($"响应报文长度错误，期望 8 字节，收到 {responseFrame.Length} 字节");
             }
 
             // 5. 将期望的状态(bool)转换回协议中的数值，用于比较
@@ -293,7 +294,7 @@ namespace ModbusLibrary
             // 7. 确认从站返回的回显是否与我们发送的请求一致
             if (addressFromResponse != expectedAddress || valueFromResponse != expectedValue)
             {
-                throw new System.IO.InvalidDataException("响应内容与请求不匹配（回显错误）。");
+                throw new ModbusFrameException("响应内容与请求不匹配（回显错误）。");
             }
         }
         /// <summary>
@@ -312,19 +313,19 @@ namespace ModbusLibrary
             if (responseFrame[1] > 0x80)
             {
                 byte exceptionCode = responseFrame[2];
-                throw new System.IO.IOException($"从站返回异常码: {exceptionCode}");
+                throw new ModbusSlaveException(exceptionCode);
             }
 
             // 3. 检查功能码是否正确
             if (responseFrame[1] != 0x06)
             {
-                throw new System.IO.InvalidDataException($"功能码不匹配，期望 0x06，收到 {responseFrame[1]:X2}");
+                throw new ModbusFrameException($"功能码不匹配，期望 0x06，收到 {responseFrame[1]:X2}");
             }
 
             // 4. 检查报文长度是否为固定的8字节
             if (responseFrame.Length != 8)
             {
-                throw new System.IO.InvalidDataException($"响应报文长度错误，期望 8 字节，收到 {responseFrame.Length} 字节");
+                throw new ModbusFrameException($"响应报文长度错误，期望 8 字节，收到 {responseFrame.Length} 字节");
             }
 
             // 5. 从响应中提取地址和值，进行验证
@@ -334,7 +335,7 @@ namespace ModbusLibrary
             // 6. 确认从站返回的回显是否与我们发送的请求一致
             if (addressFromResponse != expectedAddress || valueFromResponse != expectedValue)
             {
-                throw new System.IO.InvalidDataException("响应内容与请求不匹配（回显错误）。");
+                throw new ModbusFrameException("响应内容与请求不匹配（回显错误）。");
             }
         }
 
@@ -353,19 +354,19 @@ namespace ModbusLibrary
             if (responseFrame[1] > 0x80)
             {
                 byte exceptionCode = responseFrame[2];
-                throw new System.IO.IOException($"从站返回异常码: {exceptionCode:X2}");
+                throw new ModbusSlaveException(exceptionCode);
             }
 
             // 3. 检查功能码
             if (responseFrame[1] != 0x10)
             {
-                throw new System.IO.InvalidDataException($"功能码不匹配，期望 0x10，收到 {responseFrame[1]:X2}");
+                throw new ModbusFrameException($"功能码不匹配，期望 0x10，收到 {responseFrame[1]:X2}");
             }
 
             // 4. 检查报文长度是否为固定的8字节
             if (responseFrame.Length != 8)
             {
-                throw new System.IO.InvalidDataException($"响应报文长度错误，期望 8 字节，收到 {responseFrame.Length} 字节");
+                throw new ModbusFrameException($"响应报文长度错误，期望 8 字节，收到 {responseFrame.Length} 字节");
             }
 
             // 5. 从响应中提取地址和数量
@@ -375,7 +376,7 @@ namespace ModbusLibrary
             // 6. 确认从站返回的地址和数量是否与我们发送的请求一致
             if (addressFromResponse != expectedStartAddress || quantityFromResponse != expectedQuantity)
             {
-                throw new System.IO.InvalidDataException("响应内容（起始地址或数量）与请求不匹配。");
+                throw new ModbusFrameException("响应内容（起始地址或数量）与请求不匹配。");
             }
         }
 
@@ -392,17 +393,17 @@ namespace ModbusLibrary
             if (responseFrame[1] > 0x80)
             {
                 byte exceptionCode = responseFrame[2];
-                throw new System.IO.IOException($"从站返回异常码: {exceptionCode:X2}");
+                throw new ModbusSlaveException(exceptionCode);
             }
 
             if (responseFrame[1] != 0x0F)
             {
-                throw new System.IO.InvalidDataException($"功能码不匹配，期望 0x0F，收到 {responseFrame[1]:X2}");
+                throw new ModbusFrameException($"功能码不匹配，期望 0x0F，收到 {responseFrame[1]:X2}");
             }
 
             if (responseFrame.Length != 8)
             {
-                throw new System.IO.InvalidDataException($"响应报文长度错误，期望 8 字节，收到 {responseFrame.Length} 字节");
+                throw new ModbusFrameException($"响应报文长度错误，期望 8 字节，收到 {responseFrame.Length} 字节");
             }
 
             ushort addressFromResponse = GetValueFromBigEndianBytes(responseFrame, 2);
@@ -410,7 +411,7 @@ namespace ModbusLibrary
 
             if (addressFromResponse != expectedStartAddress || quantityFromResponse != expectedQuantity)
             {
-                throw new System.IO.InvalidDataException("响应内容（起始地址或数量）与请求不匹配。");
+                throw new ModbusFrameException("响应内容（起始地址或数量）与请求不匹配。");
             }
         }
 
