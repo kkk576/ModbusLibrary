@@ -81,6 +81,12 @@ namespace ModbusLibrary
             _serialPort.DiscardInBuffer();
             _serialPort.DiscardOutBuffer();
 
+            // ▼▼▼【新增日志】▼▼▼
+            // 在发送前，打印出即将发送的报文
+            // BitConverter.ToString 会将字节数组转换成 "01-0A-FF" 这样的十六进制字符串
+            Console.WriteLine($"TX -> {BitConverter.ToString(requestFrame)}");
+            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
             // 2. 发送请求报文
             _serialPort.Write(requestFrame, 0, requestFrame.Length);
 
@@ -98,6 +104,15 @@ namespace ModbusLibrary
             {
                 // 超时是正常的，它标志着一帧数据的结束。
             }
+
+            // ▼▼▼【新增日志】▼▼▼
+            // 在接收到数据后，打印出收到的原始报文
+            byte[] responseFrame = responseBuffer.ToArray();
+            if (responseFrame.Length > 0)
+            {
+                Console.WriteLine($"RX <- {BitConverter.ToString(responseFrame)}");
+            }
+            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
             // 如果超时后仍然一个字节都没收到，说明从站无响应
             if (responseBuffer.Count == 0)
